@@ -5,6 +5,7 @@
   "author": "Vsevolod Dolgopolov <zavalit@gmail.com>",
   "homepage": "",
   "license": "MIT",
+  "private": true,
   "main": "lib/formular-devtools.js",
   "directories": {
     "lib": "lib",
