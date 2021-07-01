@@ -6,7 +6,9 @@ window.__FORMULAR_DATA__ = {} as FormularData
 const VALID_TAGS = ['INPUT', 'SELECT', 'TEXTAREA']
 
 
-const filterElementsOut = (elements, _elements) => elements.filter(el => filterElementOut(_elements, el).length > 0) 
+const filterElementsOut = (elements, _elements) => elements.filter(el => {
+    return filterElementOut(_elements, el).length == _elements.length
+}) 
 
 const filterElementOut = (elements, _element) => elements.filter(el => el.name !== _element.name)
 
@@ -18,8 +20,8 @@ const obtainValues = (elements, formId) => {
     const formData = window.__FORMULAR_DATA__[formId] || {} as FormData
     
     elements.forEach(el => {
-        const {tagName, name, value} = el
-        formData[tagName] = [...(formData[tagName] || []).filter(el => el.name !== name), {name, value}]
+        const {tagName, name, value, files} = el
+        formData[tagName] = [...(formData[tagName] || []).filter(el => el.name !== name), {name, value: files || value}]
     })
 
     window.__FORMULAR_DATA__[formId] = formData
@@ -39,13 +41,13 @@ const changeEventListener = (e, form, formId) => {
 
 const findChildFormElements = (nodes) => {
     
-    const _elements = Array.from(nodes).filter((el:Element) => VALID_TAGS.find((tag: string) => el.querySelector && el.querySelector(tag.toLocaleLowerCase())))
+    const tagsQuery = VALID_TAGS.map(t => t.toLocaleLowerCase()).join(',')
 
-    const __form_elements = _elements.map((el:Element) => VALID_TAGS.map((tag: string) => el.querySelector && el.querySelector(tag.toLocaleLowerCase())))
+    const validFormElements = Array.from(nodes).map((el:Element) => 
+        el.querySelectorAll && Array.from(el.querySelectorAll(tagsQuery)))
+        .reduce((acc, elements) => [...acc, ...elements], [])
 
-    const real_form_elements = __form_elements.reduce((acc, elems) => [...acc, ...elems.filter(e => e !== null)], [])
-
-    return real_form_elements
+    return validFormElements
 }
 
 
@@ -57,7 +59,7 @@ export const Formular = ({children, onSubmit, ...props}) => {
 
     const [formId]  = useState<string>(props.id || `id_${Math.floor(100000 + Math.random() * 900000)}`)
     const [elements, setElements] = useState<HTMLBaseElement[]>([])
-    const formRef = useRef()
+    const formRef = useRef<HTMLFormElement>()
     
 
     const changeFormElementEventListener = (e) => changeEventListener(e, formRef.current, formId)
@@ -72,7 +74,7 @@ export const Formular = ({children, onSubmit, ...props}) => {
         const flat = Object.keys(data).reduce((acc, key) => ([...acc, ...data[key]]), [])
         const payload = flat.reduce((acc, token) => ({...acc, [token.name]:token.value}), {})
 
-        onSubmit(payload)
+        onSubmit(payload, new FormData(formRef.current))
         
         return false;
     }
@@ -81,6 +83,7 @@ export const Formular = ({children, onSubmit, ...props}) => {
         const observer = new MutationObserver((mutations => {
         
             mutations.map(mutation => {
+
                 if(mutation.type === 'childList'){
                 
                     if(mutation.addedNodes.length > 0) {
@@ -96,7 +99,7 @@ export const Formular = ({children, onSubmit, ...props}) => {
                     if(mutation.removedNodes.length > 0) {
     
                         const childFormElements = findChildFormElements(mutation.removedNodes)
-                    
+
                         if(childFormElements.length > 0) {
                             setElements(filterElementsOut(elements, childFormElements))
                         }
@@ -143,10 +146,10 @@ export const Formular = ({children, onSubmit, ...props}) => {
 
         obtainValues(elements, formId)
 
-        elements.forEach(el => el.addEventListener('change', changeFormElementEventListener))
+        elements.forEach(el => el.addEventListener('change', changeFormElementEventListener, true))
 
         return () => {
-            elements.forEach(el => el.removeEventListener('change', changeFormElementEventListener))
+           elements.forEach(el => el.removeEventListener('change', changeFormElementEventListener, true))
         }
 
     }, [elements])
