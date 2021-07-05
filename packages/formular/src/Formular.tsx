@@ -43,8 +43,10 @@ const findChildFormElements = (nodes) => {
     
     const tagsQuery = VALID_TAGS.map(t => t.toLocaleLowerCase()).join(',')
 
+    
     const validFormElements = Array.from(nodes).map((el:Element) => 
         el.querySelectorAll && Array.from(el.querySelectorAll(tagsQuery)))
+        .filter(el => el)
         .reduce((acc, elements) => [...acc, ...elements], [])
 
     return validFormElements
