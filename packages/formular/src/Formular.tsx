@@ -1,7 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, {  useEffect, useRef, useState } from 'react'
 import { FormularData, FormData } from './types'
 
-window.__FORMULAR_DATA__ = {} as FormularData
+
+const w = this as Window
+w.__FORMULAR_DATA__ = {} as FormularData
 
 const VALID_TAGS = ['INPUT', 'SELECT', 'TEXTAREA']
 
@@ -13,30 +15,30 @@ const filterElementsOut = (elements, _elements) => elements.filter(el => {
 const filterElementOut = (elements, _element) => elements.filter(el => el.name !== _element.name)
 
 const resetValues = (formId) => {
-    window.__FORMULAR_DATA__[formId] = {} as FormData
+    w.__FORMULAR_DATA__[formId] = {} as FormData
 }
 
 const obtainValues = (elements, formId) => {
-    const formData = window.__FORMULAR_DATA__[formId] || {} as FormData
+    const formData = w.__FORMULAR_DATA__[formId] || {} as FormData
     
     elements.forEach(el => {
         const {tagName, name, value, files} = el
         formData[tagName] = [...(formData[tagName] || []).filter(el => el.name !== name), {name, value: files || value}]
     })
 
-    window.__FORMULAR_DATA__[formId] = formData
+    w.__FORMULAR_DATA__[formId] = formData
 
 }
 
 const changeEventListener = (e, form, formId) => {
     
-    const formData = window.__FORMULAR_DATA__[formId] || {} as FormData
+    const formData = w.__FORMULAR_DATA__[formId] || {} as FormData
     
     const {tagName, name, value} = e.target     
 
     formData[tagName] = [...(formData[tagName] || []).filter(el => el.name !== name), {name, value}]
 
-    window.__FORMULAR_DATA__[formId] = formData
+    w.__FORMULAR_DATA__[formId] = formData
 }
 
 const findChildFormElements = (nodes) => {
@@ -53,8 +55,6 @@ const findChildFormElements = (nodes) => {
 }
 
 
-const blurEventListener = (e) => console.log('blur e', e)
-const focusEventListener = (e) => console.log('focus e', e)
 
 
 export const Formular = ({children, onSubmit, ...props}) => {
@@ -72,7 +72,7 @@ export const Formular = ({children, onSubmit, ...props}) => {
 
         resetValues(formId)
         obtainValues(elements, formId)
-        const data = window.__FORMULAR_DATA__[formId]
+        const data = w.__FORMULAR_DATA__[formId]
         const flat = Object.keys(data).reduce((acc, key) => ([...acc, ...data[key]]), [])
         const payload = flat.reduce((acc, token) => ({...acc, [token.name]:token.value}), {})
 

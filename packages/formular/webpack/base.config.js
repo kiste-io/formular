@@ -10,7 +10,8 @@ module.exports = {
   output: {
     path: path.join(__dirname, '../build'),
     libraryTarget: 'umd',
-    filename: '[name].js'
+    filename: '[name].js',
+    globalObject: 'this'
   },
   performance: {
     hints: false
